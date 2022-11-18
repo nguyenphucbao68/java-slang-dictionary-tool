@@ -1,9 +1,27 @@
 import java.util.*;
 import java.io.*;
+import java.util.regex.*;
 
 public class dictionary {
   static HashMap<String, String> slangHashMap = new HashMap<String, String>();
   static HashMap<String, HashMap<String, Boolean>> definitionHashMap = new HashMap<String, HashMap<String, Boolean>>();
+
+  static final String HISTORY_FILE_NAME = "history.txt";
+  static final String DATASET_FILE_NAME = "slang.txt";
+  static final int NUM_OF_ANSWERS_QUIZ = 4;
+  static Random rand = new Random();
+  
+  private static void saveHistorySearch(String slangWord){
+    try {
+      FileWriter fr = new FileWriter(HISTORY_FILE_NAME, true);
+      fr.write(slangWord + "|" + new java.util.Date() + "\n");
+      
+      fr.close();
+    } catch (Exception e) {
+      System.out.println(e);
+      return;
+    }
+  }
 
   private static void searchBySlangWord(){
     System.out.println("===================================");
@@ -15,6 +33,8 @@ public class dictionary {
     } else {
       System.out.println("Slang word not found");
     }
+
+    saveHistorySearch(slangWord);
   }
 
   private static void searchByDefinition(){
@@ -24,7 +44,6 @@ public class dictionary {
     String keywords = System.console().readLine();
 
     String[] keywordsSplit = keywords.split(" ");
-    HashMap<String, Integer> mostMatchSlangWord = new HashMap<String, Integer>();
     
     Set<String> slangWordResult = new HashSet<String>();
     boolean first = true;
@@ -41,7 +60,6 @@ public class dictionary {
     for (String slangWord : slangWordResult) {
       System.out.println(slangWord + " ");
     }
-
   }
 
   private static void loadSlangWords(String fileName){
@@ -77,28 +95,33 @@ public class dictionary {
     }
   }
 
+  private static void randomSlangWordToday(){
+    System.out.println("===================================");
+
+    HashMap<String, String> slangWord = randomHashMapSlangWords(1);
+    System.out.println("Random slang word today: " + slangWord.keySet().toArray()[0]);
+  }
+
   private static void searchHistory(){
     System.out.println("===================================");
     System.out.println("Search history");
 
     try {
-      FileReader fr = new FileReader("search_history.txt");
+      FileReader fr = new FileReader(HISTORY_FILE_NAME);
       BufferedReader br = new BufferedReader(fr);
 
-      String line = br.readLine();
+      String line;
       while((line = br.readLine()) != null){
-        String[] split = line.split("|");
+        String[] split = line.split(Pattern.quote("|"));
         System.out.println(split[0] + " - " + split[1]);
       }
       fr.close();
     } catch (Exception e) {
-      // TODO: handle exception
-
       System.out.println(e);
       return;
     }
   }
-  static Random rand = new Random();
+ 
   private static int randomNumber(int size){
     return rand.nextInt(size);
   }
@@ -123,16 +146,15 @@ public class dictionary {
     return randomSlangWords;
   }
 
-  static final int numOfAnswersQuiz = 4;
 
   private static void quizSlangWord(){
     System.out.println("===================================");
     System.out.println("Quiz slang word");
 
-    HashMap<String, String> randomSlangWords = randomHashMapSlangWords(numOfAnswersQuiz);
+    HashMap<String, String> randomSlangWords = randomHashMapSlangWords(NUM_OF_ANSWERS_QUIZ);
 
     String word = "";
-    int randomIndex = randomNumber(numOfAnswersQuiz);
+    int randomIndex = randomNumber(NUM_OF_ANSWERS_QUIZ);
     int j = 0;
     for (String slangWord : randomSlangWords.keySet()) {
       if(j == randomIndex){
@@ -163,10 +185,10 @@ public class dictionary {
     System.out.println("===================================");
     System.out.println("Quiz with definition");
 
-    HashMap<String, String> randomSlangWords = randomHashMapSlangWords(numOfAnswersQuiz);
+    HashMap<String, String> randomSlangWords = randomHashMapSlangWords(NUM_OF_ANSWERS_QUIZ);
 
     String definition = "";
-    int randomIndex = randomNumber(numOfAnswersQuiz);
+    int randomIndex = randomNumber(NUM_OF_ANSWERS_QUIZ);
     int j = 0;
     for (String slangWord : randomSlangWords.keySet()) {
       if(j == randomIndex){
@@ -210,10 +232,19 @@ public class dictionary {
     }
 
     slangHashMap.put(slangWord, definition);
+    addKeywordsByDefinition(slangWord, definition);
+  }
 
-    String[] definitionKeywords = definition.split(" ");
+  private static void removeKeywordsByDefinition(String slangWord){
+    String[] keywords = slangHashMap.get(slangWord).split(" ");
+    for(String keyword : keywords){
+      definitionHashMap.get(keyword).remove(slangWord);
+    }
+  }
 
-    for(String keyword : definitionKeywords){
+  private static void addKeywordsByDefinition(String slangWord, String definition){
+    String[] keywords = definition.split(" ");
+    for(String keyword : keywords){
       if(definitionHashMap.containsKey(keyword)){
         definitionHashMap.get(keyword).put(slangWord, true);
       } else {
@@ -224,41 +255,98 @@ public class dictionary {
     }
   }
 
+  private static void editASlangWord(){
+    System.out.println("===================================");
+    System.out.println("Edit a slang word");
+
+    System.out.print("Enter slang word: ");
+    String slangWord = System.console().readLine();
+
+    if(!slangHashMap.containsKey(slangWord)){
+      System.out.println("Slang word does not exist");
+      return;
+    }
+
+    System.out.print("Enter definition: ");
+    String definition = System.console().readLine();
+
+    removeKeywordsByDefinition(slangWord);
+
+    addKeywordsByDefinition(slangWord, definition);
+
+    slangHashMap.put(slangWord, definition);
+  }
+
+  private static void deleteASlangWord(){
+    System.out.println("===================================");
+    System.out.println("Delete a slang word");
+
+    System.out.print("Enter slang word: ");
+    String slangWord = System.console().readLine();
+
+    // check existence
+    if(!slangHashMap.containsKey(slangWord)){
+      System.out.println("Slang word does not exist");
+      return;
+    }
+
+    removeKeywordsByDefinition(slangWord);
+    slangHashMap.remove(slangWord);
+  }
+
   public static void main(String[] args) {
-    loadSlangWords("slang.txt");
+    loadSlangWords(DATASET_FILE_NAME);
 
-    // searchByDefinition();
-    // randomASlangWord();
-    // quizSlangWord();
-    quizWithDefinition();
+    while(true){
+      System.out.println("===================================");
+      System.out.println("1. Search by definition");
+      System.out.println("2. Search by slang word");
+      System.out.println("3. Random a slang word");
+      System.out.println("4. Quiz slang word");
+      System.out.println("5. Quiz with definition");
+      System.out.println("6. Add a slang word");
+      System.out.println("7. Edit a slang word");
+      System.out.println("8. Delete a slang word");
+      System.out.println("9. Search History");
+      System.out.println("10. Exit");
+      System.out.print("Your choice: ");
+      int choice = Integer.parseInt(System.console().readLine());
 
-    // while(true) {
-    //   System.out.println("===================================");
-    //   System.out.println("Dictionary");
-    //   System.out.println("1. search by slang word");
-    //   System.out.println("2. search by definition");
-    //   System.out.println("3. search history");
-    //   System.out.println("4. create a new slang word");
-    //   System.out.println("5. edit a slang word");
-    //   System.out.println("6. save student");
-    //   System.out.println("7. reset to default");
-    //   System.out.println("8. slang word on this day");
-    //   System.out.println("9. slang word to choose definition");
-    //   System.out.println("10. definition to choose slang word");
-    //   System.out.print("Enter your choice: ");
-    //   int choice = Integer.parseInt(System.console().readLine());
-    //   switch(choice){
-    //     case 1:
-    //       searchBySlangWord();
-    //       break;
-    //     case 9:
-    //       System.exit(0);
-    //       break;
-    //     default:
-    //       System.out.println("Invalid choice");
-    //       break;
-    //   }
-    // }
- 
+      switch(choice){
+        case 1:
+          searchByDefinition();
+          break;
+        case 2:
+          searchBySlangWord();
+          break;
+        case 3:
+          randomSlangWordToday();
+          break;
+        case 4:
+          quizSlangWord();
+          break;
+        case 5:
+          quizWithDefinition();
+          break;
+        case 6:
+          addASlangWord();
+          break;
+        case 7:
+          editASlangWord();
+          break;
+        case 8:
+          deleteASlangWord();
+          break;
+        case 9:
+          searchHistory();
+          break;
+        case 10:
+          System.exit(0);
+          break;
+        default:
+          System.out.println("Invalid choice");
+          break;
+      }
+    } 
   }
 }
