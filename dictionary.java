@@ -27,7 +27,8 @@ public class dictionary  extends JPanel implements ActionListener {
   static HashMap<String, HashSet<String>> slangWordIndex = new HashMap<String, HashSet<String>>();
   static final String HISTORY_FILE_NAME = "history.txt";
   static final String DATASET_FILE_NAME = "slang.txt";
-  static final String INDEX_FILE_NAME = "index.txt";
+  static final String DATASET_CLONE_FILE_NAME = "slang_clone.txt";
+  static final String INDEX_FILE_NAME = "definition_index.txt";
   static final String SLANG_WORD_INDEX_FILE_NAME = "slang_index.txt";
   static final int NUM_OF_ANSWERS_QUIZ = 4;
   static Random rand = new Random();
@@ -58,13 +59,15 @@ public class dictionary  extends JPanel implements ActionListener {
       listSearchResultModel.clear();
       listSearchResultModel.addAll(slangWords);
       searchList.setModel(listSearchResultModel);
+
+       // add slangWord to tableHistory at top
+    
     } else {
       JOptionPane.showMessageDialog(frame, "Not found");
     }
 
     saveHistorySearch(slangWord);
 
-    // add slangWord to tableHistory at top
     DefaultTableModel model = (DefaultTableModel) tableHistory.getModel();
     model.insertRow(0, new Object[]{slangWord, new java.util.Date()});
   }
@@ -152,8 +155,13 @@ public class dictionary  extends JPanel implements ActionListener {
     todayWordDefinitionLabel.setText(definitionToShow);
   }
 
-  private static void searchHistory(){
+  private static void loadHistory(){
     try {
+      File file = new File(HISTORY_FILE_NAME);
+      if(!file.exists()){
+        return;
+      }
+
       FileReader fr = new FileReader(HISTORY_FILE_NAME);
       BufferedReader br = new BufferedReader(fr);
       
@@ -195,9 +203,6 @@ public class dictionary  extends JPanel implements ActionListener {
   }
 
   private static HashMap<String, String> randomHashMapSlangWords(int count){
-    System.out.println("===================================");
-    System.out.println("Random a slang word");
-
     HashMap<String, String> randomSlangWords = new HashMap<String, String>();
     for (int i = 0; i < count; i++) {
       int randomIndex = randomNumber(slangHashMap.size());
@@ -539,6 +544,16 @@ public class dictionary  extends JPanel implements ActionListener {
 
       fw.close();
 
+      // save slang word to file
+      fileName = DATASET_CLONE_FILE_NAME;
+      fw = new FileWriter(fileName);
+
+      for(String slangWord: slangHashMap.keySet()){
+          fw.write(slangWord + "`" + slangHashMap.get(slangWord) + "\n");
+      }
+
+      fw.close();
+
     } catch (Exception e) {
       System.out.println(e);
       return;
@@ -712,7 +727,7 @@ public class dictionary  extends JPanel implements ActionListener {
 
   private static void loadDataSetFromFile(){
     try {
-      FileReader fr = new FileReader(DATASET_FILE_NAME);
+      FileReader fr = new FileReader(DATASET_CLONE_FILE_NAME);
       BufferedReader br = new BufferedReader(fr);
 
       String line = br.readLine();
@@ -733,16 +748,19 @@ public class dictionary  extends JPanel implements ActionListener {
 
   private static void handleIndexBeforeRunningApp(){
     try {
-      // check file index exists
       File file = new File(INDEX_FILE_NAME);
       
-      // check file slang word index exists
       File file2 = new File(SLANG_WORD_INDEX_FILE_NAME);
-      if(file.exists() && file2.exists()){
+
+      File file3 = new File(DATASET_CLONE_FILE_NAME);
+      if(file.exists() && file2.exists() && file3.exists()){
         loadSlangWordIndexFromFile();
         loadIndexDictionaryFromFile();
         loadDataSetFromFile();
+        System.out.println("test 1");
+
       }else{
+        System.out.println("test 2");
         loadSlangWords();
         saveIndexDictionaryData();
       }
@@ -768,8 +786,7 @@ public class dictionary  extends JPanel implements ActionListener {
     searchButton = new JButton("Search");
     searchButton.addActionListener(this);
     
-    // String[] names = {"Arlo", "Cosmo", "Elmo", "Hugo"};
-    searchList = new JList<String>(); //data has type Object[]
+    searchList = new JList<String>(); 
     searchList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     searchList.setLayoutOrientation(JList.VERTICAL);
     searchList.setVisibleRowCount(-1);
@@ -822,9 +839,8 @@ public class dictionary  extends JPanel implements ActionListener {
     JLabel historyLabel = new JLabel("History");
     history.add(historyLabel);
 
-    String[] columnNames = {"Slang word", "Definition"};
-    // String[][] data = {{"Arlo", "A dog"}, {"Cosmo", "A cat"}, {"Elmo", "A fish"}, {"Hugo", "A bird"}};
-    String[][] data = {{}};
+    String[] columnNames = {"Slang word", "Date"};
+    String[][] data = {{"", ""}};
     tableHistory = new JTable(data, columnNames);
     tableHistory.setPreferredScrollableViewportSize(new Dimension(200, 200));
     tableHistory.setFillsViewportHeight(true);
@@ -851,9 +867,6 @@ public class dictionary  extends JPanel implements ActionListener {
   }
 
   public void actionPerformed(ActionEvent e) {
-    // JComboBox<String> cb = (JComboBox)e.getSource();
-    // String petName = (String)cb.getSelectedItem();
-    // updateLabel(petName);
     if(e.getSource() == searchButton){
       if(searchOptions.getSelectedIndex() == 0){
         searchBySlangWord();
@@ -873,7 +886,9 @@ public class dictionary  extends JPanel implements ActionListener {
       quizSlangWord();
     } else if(e.getSource() == quizOpenWithDefinition){
       quizWithDefinition();
-    } 
+    } else if(e.getSource() == resetButton){
+      resetDataToDefault();
+    }
   }
 
   private static void createAndShowGUI() 
@@ -883,7 +898,7 @@ public class dictionary  extends JPanel implements ActionListener {
     JDialog.setDefaultLookAndFeelDecorated(true);
 
     //Create and set up the window.
-    frame = new JFrame("Name That Baby");
+    frame = new JFrame("Dictionary");
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
     //Create and set up the content pane.
@@ -903,77 +918,42 @@ public class dictionary  extends JPanel implements ActionListener {
 
     searchList.setModel(listSearchResultModel);
   }
- 
-  public static void main(String[] args) {
+  
+  private static void resetDataToDefault(){
+    File file = new File(INDEX_FILE_NAME);
+    file.delete();
+    file = new File(HISTORY_FILE_NAME);
+    file.delete();
+    file = new File(SLANG_WORD_INDEX_FILE_NAME);
+    file.delete();
+    file = new File(DATASET_CLONE_FILE_NAME);
+    file.delete();
+
+    slangHashMap.clear();
+    slangWordIndex.clear();
+    definitionHashMap.clear();
+
     handleIndexBeforeRunningApp();
+
+    loadAllSlangWordsToSearchResult();
+
+    loadHistory();
+
+    randomSlangWordToday();
+  }
+
+  public static void main(String[] args) {
 
     javax.swing.SwingUtilities.invokeLater(new Runnable() 
     {
         public void run() 
         {
+            handleIndexBeforeRunningApp();
             createAndShowGUI();
             loadAllSlangWordsToSearchResult();
             randomSlangWordToday();
-            searchHistory();
-            
+            loadHistory();
         }
     });
 }
-
-  // public static void main(String[] args) {
-  //   handleIndexBeforeRunningApp();
-  //   saveIndexDictionaryData();
-  //   while(true){
-  //     System.out.println("===================================");
-  //     System.out.println("1. Search by definition");
-  //     System.out.println("2. Search by slang word");
-  //     System.out.println("3. Random a slang word");
-  //     System.out.println("4. Quiz slang word");
-  //     System.out.println("5. Quiz with definition");
-  //     System.out.println("6. Add a slang word");
-  //     System.out.println("7. Edit a slang word");
-  //     System.out.println("8. Delete a slang word");
-  //     System.out.println("9. Search History");
-  //     System.out.println("10. Exit");
-  //     System.out.print("Your choice: ");
-  //     int choice = Integer.parseInt(System.console().readLine());
-
-  //     switch(choice){
-  //       case 1:
-  //         searchByDefinition();
-  //         break;
-  //       case 2:
-  //         searchBySlangWord();
-  //         break;
-  //       case 3:
-  //         randomSlangWordToday();
-  //         break;
-  //       case 4:
-  //         quizSlangWord();
-  //         break;
-  //       case 5:
-  //         quizWithDefinition();
-  //         break;
-  //       case 6:
-  //         addASlangWord();
-  //         break;
-  //       case 7:
-  //         editASlangWord();
-  //         break;
-  //       case 8:
-  //         deleteASlangWord();
-  //         break;
-  //       case 9:
-  //         searchHistory();
-  //         break;
-  //       case 10:
-  //         System.exit(0);
-  //         break;
-  //       default:
-  //         System.out.println("Invalid choice");
-  //         break;
-  //     }
-  //   } 
-  
-  // }
 }
