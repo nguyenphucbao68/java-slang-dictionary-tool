@@ -1,8 +1,27 @@
 import java.util.*;
 import java.io.*;
 import java.util.regex.*;
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.table.*;
 
-public class dictionary {
+public class dictionary  extends JPanel implements ActionListener {
+  static JFrame frame;
+  static JTextField searchField;
+  static JButton searchButton;
+  static JButton createButton;
+  static JButton editButton;
+  static JButton deleteButton;
+  static JButton resetButton;
+  static JList<String> searchList;
+  static JComboBox<String> searchOptions;
+  static JLabel todayWordLabel;
+  static JLabel todayWordDefinitionLabel;
+  static JTable tableHistory;
+  static JButton quizOpenWithSlangWord;
+  static JButton quizOpenWithDefinition;
+  static DefaultListModel<String> listSearchResultModel;
   static HashMap<String, String> slangHashMap = new HashMap<String, String>();
   static HashMap<String, HashSet<String>> definitionHashMap = new HashMap<String, HashSet<String>>();
   static HashMap<String, HashSet<String>> slangWordIndex = new HashMap<String, HashSet<String>>();
@@ -26,29 +45,36 @@ public class dictionary {
   }
 
   private static void searchBySlangWord(){
-    System.out.println("===================================");
-    System.out.println("Search by slang word");
-    System.out.print("Enter slang word: ");
-    String slangWord = System.console().readLine();
+    String slangWord = searchField.getText();
+    if (slangWord.length() == 0){
+      JOptionPane.showMessageDialog(frame, "Please enter a slang word to search");
+      return;
+    }
+
     if(slangWordIndex.containsKey(slangWord)){
-      // slow list of slangwords
       HashSet<String> slangWords = slangWordIndex.get(slangWord);
-      for(String s : slangWords){
-        System.out.println(s + ": " + slangHashMap.get(s));
-      }
+      // String[] names = slangWords.toArray(new String[slangWords.size()]);
+      // searchList.setListData(names);
+      listSearchResultModel.clear();
+      listSearchResultModel.addAll(slangWords);
+      searchList.setModel(listSearchResultModel);
     } else {
-      System.out.println("Not found");
+      JOptionPane.showMessageDialog(frame, "Not found");
     }
 
     saveHistorySearch(slangWord);
+
+    // add slangWord to tableHistory at top
+    DefaultTableModel model = (DefaultTableModel) tableHistory.getModel();
+    model.insertRow(0, new Object[]{slangWord, new java.util.Date()});
   }
 
   private static void searchByDefinition(){
-    System.out.println("===================================");
-    System.out.println("Search by definition");
-    System.out.print("Enter definition: ");
-    String keywords = System.console().readLine();
-
+    String keywords = searchField.getText();
+    if (keywords.length() == 0){
+      JOptionPane.showMessageDialog(frame, "Please enter a definition to search");
+      return;
+    }
     String[] keywordsSplit = keywords.split(" ");
     
     Set<String> slangWordResult = new HashSet<String>();
@@ -62,14 +88,13 @@ public class dictionary {
       }
     }
 
-    System.out.println("Slang words: ");
-    for (String slangWord : slangWordResult) {
-      System.out.println(slangWord + " ");
-    }
+    listSearchResultModel.clear();
+    listSearchResultModel.addAll(slangWordResult);
+    searchList.setModel(listSearchResultModel);
+    
   }
 
   private static void loadSlangWords(){
-    // load slang words
     try {
       FileReader fr = new FileReader(DATASET_FILE_NAME);
       BufferedReader br = new BufferedReader(fr);
@@ -113,25 +138,51 @@ public class dictionary {
   }
 
   private static void randomSlangWordToday(){
-    System.out.println("===================================");
-
     HashMap<String, String> slangWord = randomHashMapSlangWords(1);
-    System.out.println("Random slang word today: " + slangWord.keySet().toArray()[0]);
+    todayWordLabel.setText("Today's slang word: " + slangWord.keySet().toArray()[0]);
+
+    String definition = slangWord.get(slangWord.keySet().toArray()[0]);
+
+    // split definition by "|" and show all of them
+    String[] definitions = definition.split("|");
+    String definitionToShow = "";
+    for(String def : definitions){
+      definitionToShow += def + "\n";
+    }
+    todayWordDefinitionLabel.setText(definitionToShow);
   }
 
   private static void searchHistory(){
-    System.out.println("===================================");
-    System.out.println("Search history");
-
     try {
       FileReader fr = new FileReader(HISTORY_FILE_NAME);
       BufferedReader br = new BufferedReader(fr);
+      
+      ArrayList<String> history = new ArrayList<String>();
 
       String line;
       while((line = br.readLine()) != null){
-        String[] split = line.split(Pattern.quote("|"));
-        System.out.println(split[0] + " - " + split[1]);
+        history.add(line);
       }
+
+      String[] columnNames = {"Slang word", "Date"};
+      String[][] data = new String[history.size()][2];
+      for(int i = 0; i < history.size(); i++){
+        String[] split = history.get(i).split(Pattern.quote("|"));
+        data[i][0] = split[0];
+        data[i][1] = split[1];
+      }
+
+      Arrays.sort(data, new Comparator<String[]>() {
+        @Override
+        public int compare(final String[] entry1, final String[] entry2) {
+          final String time1 = entry1[1];
+          final String time2 = entry2[1];
+          return time2.compareTo(time1);
+        }
+      });
+
+      tableHistory.setModel(new DefaultTableModel(data, columnNames));
+
       fr.close();
     } catch (Exception e) {
       System.out.println(e);
@@ -164,8 +215,14 @@ public class dictionary {
   }
 
   private static void quizSlangWord(){
-    System.out.println("===================================");
-    System.out.println("Quiz slang word");
+    JFrame quizFrame = new JFrame("Quiz");
+    quizFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    quizFrame.setLocationRelativeTo(null);
+    quizFrame.setLayout(new BorderLayout());
+
+    JPanel panelQuiz = new JPanel();
+    panelQuiz.setPreferredSize(new Dimension(400, 200));
+    panelQuiz.setLayout(new BoxLayout(panelQuiz, BoxLayout.Y_AXIS));
 
     HashMap<String, String> randomSlangWords = randomHashMapSlangWords(NUM_OF_ANSWERS_QUIZ);
 
@@ -180,26 +237,78 @@ public class dictionary {
       j++;
     }
 
+    JPanel panelQuizTitle = new JPanel();
+    panelQuizTitle.setLayout(new BoxLayout(panelQuizTitle, BoxLayout.X_AXIS));
+    JLabel quizTitle = new JLabel(word + " - Choose the correct one: ");
+    quizTitle.setFont(new Font("Arial", Font.BOLD, 20));
+    panelQuizTitle.add(quizTitle);
+    panelQuizTitle.add(Box.createRigidArea(new Dimension(10, 0)));
+    panelQuizTitle.add(Box.createHorizontalGlue());
+    panelQuiz.add(panelQuizTitle);
 
-    System.out.println(word + " - Choose the correct definition for the slang word (1-4): ");
-    int i = 1;
-    for (String slangWord : randomSlangWords.keySet()) {
-      System.out.println(i + ". " + randomSlangWords.get(slangWord));
-      i++;
+    JPanel panelQuizAnswer = new JPanel();
+    panelQuizAnswer.setLayout(new BoxLayout(panelQuizAnswer, BoxLayout.Y_AXIS));
+    ButtonGroup group = new ButtonGroup();
+    for (String slangWord : randomSlangWords.values()) {
+      JRadioButton button = new JRadioButton(slangWord);
+      group.add(button);
+      panelQuizAnswer.add(button);
     }
 
-    System.out.print("Your answer: ");
-    int answer = Integer.parseInt(System.console().readLine());
-    if(answer == randomIndex + 1){
-      System.out.println("Correct");
-    } else {
-      System.out.println("Incorrect");
-    }
+    panelQuiz.add(panelQuizAnswer);
+
+    JPanel panelQuizButton = new JPanel();
+    panelQuizButton.setLayout(new BoxLayout(panelQuizButton, BoxLayout.X_AXIS));
+    JButton buttonSubmit = new JButton("Submit");
+
+    buttonSubmit.addActionListener(new ActionListener() {
+      @Override
+      public void actionPerformed(ActionEvent e) {
+        Enumeration<AbstractButton> buttons = group.getElements();
+        int i = 1;
+        while(buttons.hasMoreElements()){
+          AbstractButton button = buttons.nextElement();
+          if(button.isSelected()){
+            if(i == randomIndex + 1){
+              JOptionPane.showMessageDialog(null, "Correct!");
+
+              panelQuiz.setVisible(false);
+              quizFrame.dispose();
+            } else {
+              JOptionPane.showMessageDialog(null, "Wrong!");
+            }
+            break;
+          }
+          i++;
+        }
+      }
+    });
+
+    panelQuizButton.add(buttonSubmit);
+
+    panelQuiz.add(panelQuizButton);
+
+    // JOptionPane.showMessageDialog(null, panelQuiz);
+
+    quizFrame.setVisible(true);
+
+   
+    quizFrame.add(panelQuiz);
+
+    quizFrame.pack();
   }
 
   private static void quizWithDefinition(){
-    System.out.println("===================================");
-    System.out.println("Quiz with definition");
+    JFrame quizFrame = new JFrame("Quiz");
+    quizFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    quizFrame.setLocationRelativeTo(null);
+    quizFrame.setLayout(new BorderLayout());
+
+    JPanel panelQuiz = new JPanel();
+    panelQuiz.setLayout(new BoxLayout(panelQuiz, BoxLayout.Y_AXIS));
+
+    JPanel panelQuizTitle = new JPanel();
+    panelQuizTitle.setLayout(new BoxLayout(panelQuizTitle, BoxLayout.X_AXIS));
 
     HashMap<String, String> randomSlangWords = randomHashMapSlangWords(NUM_OF_ANSWERS_QUIZ);
 
@@ -214,44 +323,155 @@ public class dictionary {
       j++;
     }
 
+    JLabel quizTitle = new JLabel(definition + " - Choose the correct one: ");
+    quizTitle.setFont(new Font("Arial", Font.BOLD, 20));
+    panelQuizTitle.add(quizTitle);
+    panelQuizTitle.add(Box.createRigidArea(new Dimension(10, 0)));
+    panelQuizTitle.add(Box.createHorizontalGlue());
+    panelQuiz.add(panelQuizTitle);
 
-    System.out.println(definition + " - Choose the correct definition for the slang word (1-4): ");
-    int i = 1;
+
+    // create panel quiz answer
+    JPanel panelQuizAnswer = new JPanel();
+    panelQuizAnswer.setLayout(new BoxLayout(panelQuizAnswer, BoxLayout.Y_AXIS));
+    ButtonGroup group = new ButtonGroup();
     for (String slangWord : randomSlangWords.keySet()) {
-      System.out.println(i + ". " + slangWord);
-      i++;
+      JRadioButton button = new JRadioButton(slangWord);
+      group.add(button);
+      panelQuizAnswer.add(button);
     }
 
-    System.out.print("Your answer: ");
-    int answer = Integer.parseInt(System.console().readLine());
-    if(answer == randomIndex + 1){
-      System.out.println("Correct");
-    } else {
-      System.out.println("Incorrect");
-    }
+    panelQuiz.add(panelQuizAnswer);
+
+    // create panel quiz button
+    JPanel panelQuizButton = new JPanel();
+    panelQuizButton.setLayout(new BoxLayout(panelQuizButton, BoxLayout.X_AXIS));
+    JButton buttonSubmit = new JButton("Submit");
+    
+    buttonSubmit.addActionListener(new ActionListener() {
+      @Override
+      public void actionPerformed(ActionEvent e) {
+        Enumeration<AbstractButton> buttons = group.getElements();
+        int i = 1;
+        while(buttons.hasMoreElements()){
+          AbstractButton button = buttons.nextElement();
+          if(button.isSelected()){
+            if(i == randomIndex + 1){
+              JOptionPane.showMessageDialog(null, "Correct!");
+
+              // close panelQuiz
+              // panelQuiz.setVisible(false);
+              quizFrame.dispose();
+            } else {
+              JOptionPane.showMessageDialog(null, "Wrong!");
+            }
+            break;
+          }
+          i++;
+        }
+      }
+    });
+
+    panelQuizButton.add(buttonSubmit);
+
+    panelQuiz.add(panelQuizButton);
+
+    // JOptionPane.showMessageDialog(null, panelQuiz);
+
+    quizFrame.setVisible(true);
+
+    quizFrame.add(panelQuiz);
+
+    quizFrame.pack();
   }
 
   private static void addASlangWord(){
-    System.out.println("===================================");
-    System.out.println("Add a slang word");
+    JFrame addFrame = new JFrame("Add a slang word");
+    addFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    addFrame.setLocationRelativeTo(null);
+    addFrame.setLayout(new BorderLayout());
 
-    System.out.print("Enter slang word: ");
-    String slangWord = System.console().readLine();
+    JPanel panelAddSlangWord = new JPanel();
+    panelAddSlangWord.setLayout(new BoxLayout(panelAddSlangWord, BoxLayout.Y_AXIS));
 
-    System.out.print("Enter definition: ");
-    String definition = System.console().readLine();
+    JPanel panelAddSlangWordTitle = new JPanel();
+    panelAddSlangWordTitle.setLayout(new BoxLayout(panelAddSlangWordTitle, BoxLayout.X_AXIS));
+    JLabel addSlangWordTitle = new JLabel("Enter slang word: ");
+    addSlangWordTitle.setFont(new Font("Arial", Font.BOLD, 20));
+    panelAddSlangWordTitle.add(addSlangWordTitle);
+    panelAddSlangWordTitle.add(Box.createRigidArea(new Dimension(10, 0)));
+    panelAddSlangWordTitle.add(Box.createHorizontalGlue());
+    panelAddSlangWord.add(panelAddSlangWordTitle);
 
-    // check existence
-    if(slangHashMap.containsKey(slangWord)){
-      System.out.println("Slang word already exists");
-      return;
-    }
+    JPanel panelAddSlangWordInput = new JPanel();
+    panelAddSlangWordInput.setLayout(new BoxLayout(panelAddSlangWordInput, BoxLayout.X_AXIS));
+    JTextField addSlangWordInput = new JTextField();
+    addSlangWordInput.setFont(new Font("Arial", Font.PLAIN, 20));
+    panelAddSlangWordInput.add(addSlangWordInput);
+    panelAddSlangWordInput.add(Box.createRigidArea(new Dimension(10, 0)));
+    panelAddSlangWordInput.add(Box.createHorizontalGlue());
+    panelAddSlangWord.add(panelAddSlangWordInput);
 
-    slangHashMap.put(slangWord, definition);
-    addKeywordsByDefinitionHashMap(slangWord, definition);
-    addKeywordHashMap(slangWord);
+    JPanel panelAddSlangWordDefinitionTitle = new JPanel();
+    panelAddSlangWordDefinitionTitle.setLayout(new BoxLayout(panelAddSlangWordDefinitionTitle, BoxLayout.X_AXIS));
+    JLabel addSlangWordDefinitionTitle = new JLabel("Enter definition: ");
+    addSlangWordDefinitionTitle.setFont(new Font("Arial", Font.BOLD, 20));
+    panelAddSlangWordDefinitionTitle.add(addSlangWordDefinitionTitle);
+    panelAddSlangWordDefinitionTitle.add(Box.createRigidArea(new Dimension(10, 0)));
+    panelAddSlangWordDefinitionTitle.add(Box.createHorizontalGlue());
+    panelAddSlangWord.add(panelAddSlangWordDefinitionTitle);
 
-    saveIndexDictionaryData();
+    JPanel panelAddSlangWordDefinitionInput = new JPanel();
+    panelAddSlangWordDefinitionInput.setLayout(new BoxLayout(panelAddSlangWordDefinitionInput, BoxLayout.X_AXIS));
+    JTextField addSlangWordDefinitionInput = new JTextField();
+    addSlangWordDefinitionInput.setFont(new Font("Arial", Font.PLAIN, 20));
+    panelAddSlangWordDefinitionInput.add(addSlangWordDefinitionInput);
+    panelAddSlangWordDefinitionInput.add(Box.createRigidArea(new Dimension(10, 0)));
+    panelAddSlangWordDefinitionInput.add(Box.createHorizontalGlue());
+    panelAddSlangWord.add(panelAddSlangWordDefinitionInput);
+
+    JPanel panelAddSlangWordButton = new JPanel();
+    panelAddSlangWordButton.setLayout(new BoxLayout(panelAddSlangWordButton, BoxLayout.X_AXIS));
+    JButton buttonAddSlangWord = new JButton("Add");
+
+    buttonAddSlangWord.addActionListener(new ActionListener() {
+      @Override
+      public void actionPerformed(ActionEvent e) {
+       // check existence
+        String slangWord = addSlangWordInput.getText();
+        String definition = addSlangWordDefinitionInput.getText();
+        if(slangHashMap.containsKey(slangWord)){
+          JOptionPane.showMessageDialog(null, "Slang word already exists");
+          return;
+        }
+
+        slangHashMap.put(slangWord, definition);
+        addKeywordsByDefinitionHashMap(slangWord, definition);
+        addKeywordHashMap(slangWord);
+
+        saveIndexDictionaryData();
+
+        JOptionPane.showMessageDialog(null, "Slang word added successfully");
+
+        panelAddSlangWord.setVisible(false);
+
+        listSearchResultModel.addElement(slangWord);
+
+        addFrame.dispose();
+      }
+    });
+
+    panelAddSlangWordButton.add(buttonAddSlangWord);
+
+    panelAddSlangWord.add(panelAddSlangWordButton);
+
+    // JOptionPane.showMessageDialog(null, panelAddSlangWord);
+
+    addFrame.setVisible(true);
+
+    addFrame.add(panelAddSlangWord);
+
+    addFrame.pack();
   }
 
   private static void removeKeywordsByDefinition(String slangWord){
@@ -326,39 +546,102 @@ public class dictionary {
   }
 
   private static void editASlangWord(){
-    System.out.println("===================================");
-    System.out.println("Edit a slang word");
-
-    System.out.print("Enter slang word: ");
-    String slangWord = System.console().readLine();
-
-    if(!slangHashMap.containsKey(slangWord)){
-      System.out.println("Slang word does not exist");
+    // check selected on list or not
+    if(searchList.getSelectedIndex() == -1){
+      JOptionPane.showMessageDialog(null, "Please select a slang word to edit");
       return;
     }
 
-    System.out.print("Enter definition: ");
-    String definition = System.console().readLine();
+    JFrame editFrame = new JFrame("Edit a slang word");
+    editFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    editFrame.setSize(500, 500);
+    editFrame.setLocationRelativeTo(null);
 
-    removeKeywordsByDefinition(slangWord);
-    removeKeywordIndex(slangWord);
-    addKeywordsByDefinitionHashMap(slangWord, definition);
-    addKeywordHashMap(slangWord);
-    slangHashMap.put(slangWord, definition);
+    JPanel panelEditSlangWord = new JPanel();
+    panelEditSlangWord.setLayout(new BoxLayout(panelEditSlangWord, BoxLayout.Y_AXIS));
 
-    saveIndexDictionaryData();
+    JPanel panelEditSlangWordTitle = new JPanel();
+    panelEditSlangWordTitle.setLayout(new BoxLayout(panelEditSlangWordTitle, BoxLayout.X_AXIS));
+    JLabel editSlangWordTitle = new JLabel("Edit a slang word");
+    editSlangWordTitle.setFont(new Font("Arial", Font.BOLD, 30));
+    panelEditSlangWordTitle.add(editSlangWordTitle);
+    panelEditSlangWordTitle.add(Box.createRigidArea(new Dimension(10, 0)));
+    panelEditSlangWordTitle.add(Box.createHorizontalGlue());
+    panelEditSlangWord.add(panelEditSlangWordTitle);
+
+    JPanel panelEditSlangWordInput = new JPanel();
+    panelEditSlangWordInput.setLayout(new BoxLayout(panelEditSlangWordInput, BoxLayout.X_AXIS));
+    JTextField editSlangWordInput = new JTextField();
+    editSlangWordInput.setFont(new Font("Arial", Font.PLAIN, 20));
+    editSlangWordInput.setEditable(false);
+    editSlangWordInput.setText(searchList.getSelectedValue());
+    panelEditSlangWordInput.add(editSlangWordInput);
+    panelEditSlangWordInput.add(Box.createRigidArea(new Dimension(10, 0)));
+    panelEditSlangWordInput.add(Box.createHorizontalGlue());
+    panelEditSlangWord.add(panelEditSlangWordInput);
+
+    JPanel panelEditSlangWordDefinitionInput = new JPanel();
+    panelEditSlangWordDefinitionInput.setLayout(new BoxLayout(panelEditSlangWordDefinitionInput, BoxLayout.X_AXIS));
+    JTextField editSlangWordDefinitionInput = new JTextField();
+    editSlangWordDefinitionInput.setFont(new Font("Arial", Font.PLAIN, 20));
+    editSlangWordDefinitionInput.setText(slangHashMap.get(searchList.getSelectedValue()));
+    panelEditSlangWordDefinitionInput.add(editSlangWordDefinitionInput);
+    panelEditSlangWordDefinitionInput.add(Box.createRigidArea(new Dimension(10, 0)));
+    panelEditSlangWordDefinitionInput.add(Box.createHorizontalGlue());
+    panelEditSlangWord.add(panelEditSlangWordDefinitionInput);
+
+    JPanel panelEditSlangWordButton = new JPanel();
+    panelEditSlangWordButton.setLayout(new BoxLayout(panelEditSlangWordButton, BoxLayout.X_AXIS));
+    JButton buttonEditSlangWord = new JButton("Edit");
+
+    buttonEditSlangWord.addActionListener(new ActionListener() {
+      @Override
+      public void actionPerformed(ActionEvent e) {
+        String slangWord = editSlangWordInput.getText();
+
+        if(!slangHashMap.containsKey(slangWord)){
+          JOptionPane.showMessageDialog(null, "Slang word not found!");
+          return;
+        }
+
+        String definition = editSlangWordDefinitionInput.getText();
+        removeKeywordsByDefinition(slangWord);
+        removeKeywordIndex(slangWord);
+        addKeywordsByDefinitionHashMap(slangWord, definition);
+        addKeywordHashMap(slangWord);
+        slangHashMap.put(slangWord, definition);
+    
+        saveIndexDictionaryData();
+
+        JOptionPane.showMessageDialog(null, "Slang word edited!");
+
+        panelEditSlangWord.setVisible(false);
+
+        editFrame.dispose();
+      }
+    });
+
+    panelEditSlangWordButton.add(buttonEditSlangWord);
+
+    panelEditSlangWord.add(panelEditSlangWordButton);
+
+    // JOptionPane.showMessageDialog(null, panelAddSlangWord);
+
+    editFrame.setVisible(true);
+
+    editFrame.add(panelEditSlangWord);
+
+    editFrame.pack();
+
   }
 
   private static void deleteASlangWord(){
-    System.out.println("===================================");
-    System.out.println("Delete a slang word");
-
-    System.out.print("Enter slang word: ");
-    String slangWord = System.console().readLine();
+    // read selected value from searchList
+    String slangWord = searchList.getSelectedValue();
 
     // check existence
     if(!slangHashMap.containsKey(slangWord)){
-      System.out.println("Slang word does not exist");
+      JOptionPane.showMessageDialog(null, "Slang word "+slangWord+" does not exist");
       return;
     }
 
@@ -367,6 +650,18 @@ public class dictionary {
     slangHashMap.remove(slangWord);
 
     saveIndexDictionaryData();
+
+
+    // remove the slangWord from searchList
+    int index = searchList.getSelectedIndex();
+    
+    if (index != -1) {
+      listSearchResultModel.removeElementAt(index);
+      JOptionPane.showMessageDialog(null, "Slang word " + slangWord + " deleted!");
+    }else{
+      JOptionPane.showMessageDialog(null, "Slang word " + slangWord + " deleted failure!");
+    }
+  
   }
 
   private static void loadSlangWordIndexFromFile(){
@@ -449,6 +744,7 @@ public class dictionary {
         loadDataSetFromFile();
       }else{
         loadSlangWords();
+        saveIndexDictionaryData();
       }
     } catch (Exception e) {
       System.out.println(e);
@@ -456,60 +752,228 @@ public class dictionary {
     }
   }
 
+  private dictionary(){
+    setLayout(new BorderLayout());
+    JPanel leftpanel = new JPanel();
+    leftpanel.setPreferredSize(new Dimension(500, 500));
+    
+    searchField = new JTextField(20);
+    searchField.addActionListener(this);
+
+    String[] searchOptionsData = { "Search by slang word", "Search by definition" };
+    searchOptions = new JComboBox<String>(searchOptionsData);
+    searchOptions.setSelectedIndex(0);
+    searchOptions.addActionListener(this);
+
+    searchButton = new JButton("Search");
+    searchButton.addActionListener(this);
+    
+    // String[] names = {"Arlo", "Cosmo", "Elmo", "Hugo"};
+    searchList = new JList<String>(); //data has type Object[]
+    searchList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+    searchList.setLayoutOrientation(JList.VERTICAL);
+    searchList.setVisibleRowCount(-1);
+    JScrollPane listScroller = new JScrollPane(searchList);
+    listScroller.setPreferredSize(new Dimension(500, 350));
+
+    JPanel btnList = new JPanel();
+    btnList.setLayout(new BoxLayout(btnList, BoxLayout.LINE_AXIS));
+    createButton = new JButton("Create");
+    createButton.addActionListener(this);
+    editButton = new JButton("Edit");
+    editButton.addActionListener(this);
+    deleteButton = new JButton("Delete");
+    deleteButton.addActionListener(this);
+    resetButton = new JButton("Reset");
+    resetButton.addActionListener(this);
+    btnList.add(createButton);
+    btnList.add(Box.createRigidArea(new Dimension(50,15)));
+    btnList.add(editButton);
+    btnList.add(Box.createRigidArea(new Dimension(50,15)));
+    btnList.add(deleteButton);
+    btnList.add(Box.createRigidArea(new Dimension(50,15)));
+    btnList.add(resetButton);
+
+    leftpanel.add(searchField);
+    leftpanel.add(searchOptions);
+    leftpanel.add(searchButton);
+    leftpanel.add(listScroller);
+    leftpanel.add(btnList);
+
+    JPanel rightpanel = new JPanel();
+    rightpanel.setPreferredSize(new Dimension(300, 500));
+
+    JPanel todayWord = new JPanel();
+    todayWord.setPreferredSize(new Dimension(250, 100));
+    todayWord.setBackground(Color.WHITE);
+    todayWordLabel = new JLabel();
+    JPanel definition = new JPanel();
+    definition.setPreferredSize(new Dimension(250, 100));
+    definition.setBackground(Color.WHITE);
+    todayWordDefinitionLabel = new JLabel();
+    definition.add(todayWordDefinitionLabel);
+
+    todayWord.add(todayWordLabel);
+    todayWord.add(definition);
+
+    JPanel history = new JPanel();
+    history.setPreferredSize(new Dimension(250, 250));
+    history.setBackground(Color.WHITE);
+    JLabel historyLabel = new JLabel("History");
+    history.add(historyLabel);
+
+    String[] columnNames = {"Slang word", "Definition"};
+    // String[][] data = {{"Arlo", "A dog"}, {"Cosmo", "A cat"}, {"Elmo", "A fish"}, {"Hugo", "A bird"}};
+    String[][] data = {{}};
+    tableHistory = new JTable(data, columnNames);
+    tableHistory.setPreferredScrollableViewportSize(new Dimension(200, 200));
+    tableHistory.setFillsViewportHeight(true);
+
+    JScrollPane scrollPane = new JScrollPane(tableHistory);
+    history.add(scrollPane);
+
+    JPanel btnList2 = new JPanel();
+    btnList2.setLayout(new BoxLayout(btnList2, BoxLayout.LINE_AXIS));
+    quizOpenWithSlangWord = new JButton("Quiz Word");
+    quizOpenWithSlangWord.addActionListener(this);
+    quizOpenWithDefinition = new JButton("Quiz Definition");
+    quizOpenWithDefinition.addActionListener(this);
+    btnList2.add(quizOpenWithSlangWord);
+    btnList2.add(Box.createRigidArea(new Dimension(50,15)));
+    btnList2.add(quizOpenWithDefinition);
+
+    rightpanel.add(todayWord);
+    rightpanel.add(history);
+    rightpanel.add(btnList2);
+
+    add(leftpanel, BorderLayout.WEST);
+    add(rightpanel, BorderLayout.EAST);
+  }
+
+  public void actionPerformed(ActionEvent e) {
+    // JComboBox<String> cb = (JComboBox)e.getSource();
+    // String petName = (String)cb.getSelectedItem();
+    // updateLabel(petName);
+    if(e.getSource() == searchButton){
+      if(searchOptions.getSelectedIndex() == 0){
+        searchBySlangWord();
+      } else {
+        searchByDefinition();
+      }
+    }else if(e.getSource() == createButton){
+      // create
+      addASlangWord();
+    }else if(e.getSource() == editButton){
+      // edit
+      editASlangWord();
+    }else if(e.getSource() == deleteButton){
+      // delete
+      deleteASlangWord();
+    }else if(e.getSource() == quizOpenWithSlangWord){
+      quizSlangWord();
+    } else if(e.getSource() == quizOpenWithDefinition){
+      quizWithDefinition();
+    } 
+  }
+
+  private static void createAndShowGUI() 
+  {
+    //Make sure we have nice window decorations.
+    JFrame.setDefaultLookAndFeelDecorated(true);
+    JDialog.setDefaultLookAndFeelDecorated(true);
+
+    //Create and set up the window.
+    frame = new JFrame("Name That Baby");
+    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+    //Create and set up the content pane.
+    JComponent newContentPane = new dictionary();
+    newContentPane.setOpaque(true); //content panes must be opaque
+    frame.setContentPane(newContentPane);
+
+    //Display the window.
+    frame.pack(); // fit to all components that you have
+    frame.setVisible(true);
+  }
+
+  private static void loadAllSlangWordsToSearchResult(){
+    listSearchResultModel = new DefaultListModel<String>();
+
+    listSearchResultModel.addAll(slangHashMap.keySet());
+
+    searchList.setModel(listSearchResultModel);
+  }
+ 
   public static void main(String[] args) {
     handleIndexBeforeRunningApp();
-    saveIndexDictionaryData();
-    while(true){
-      System.out.println("===================================");
-      System.out.println("1. Search by definition");
-      System.out.println("2. Search by slang word");
-      System.out.println("3. Random a slang word");
-      System.out.println("4. Quiz slang word");
-      System.out.println("5. Quiz with definition");
-      System.out.println("6. Add a slang word");
-      System.out.println("7. Edit a slang word");
-      System.out.println("8. Delete a slang word");
-      System.out.println("9. Search History");
-      System.out.println("10. Exit");
-      System.out.print("Your choice: ");
-      int choice = Integer.parseInt(System.console().readLine());
 
-      switch(choice){
-        case 1:
-          searchByDefinition();
-          break;
-        case 2:
-          searchBySlangWord();
-          break;
-        case 3:
-          randomSlangWordToday();
-          break;
-        case 4:
-          quizSlangWord();
-          break;
-        case 5:
-          quizWithDefinition();
-          break;
-        case 6:
-          addASlangWord();
-          break;
-        case 7:
-          editASlangWord();
-          break;
-        case 8:
-          deleteASlangWord();
-          break;
-        case 9:
-          searchHistory();
-          break;
-        case 10:
-          System.exit(0);
-          break;
-        default:
-          System.out.println("Invalid choice");
-          break;
-      }
-    } 
+    javax.swing.SwingUtilities.invokeLater(new Runnable() 
+    {
+        public void run() 
+        {
+            createAndShowGUI();
+            loadAllSlangWordsToSearchResult();
+            randomSlangWordToday();
+            searchHistory();
+            
+        }
+    });
+}
+
+  // public static void main(String[] args) {
+  //   handleIndexBeforeRunningApp();
+  //   saveIndexDictionaryData();
+  //   while(true){
+  //     System.out.println("===================================");
+  //     System.out.println("1. Search by definition");
+  //     System.out.println("2. Search by slang word");
+  //     System.out.println("3. Random a slang word");
+  //     System.out.println("4. Quiz slang word");
+  //     System.out.println("5. Quiz with definition");
+  //     System.out.println("6. Add a slang word");
+  //     System.out.println("7. Edit a slang word");
+  //     System.out.println("8. Delete a slang word");
+  //     System.out.println("9. Search History");
+  //     System.out.println("10. Exit");
+  //     System.out.print("Your choice: ");
+  //     int choice = Integer.parseInt(System.console().readLine());
+
+  //     switch(choice){
+  //       case 1:
+  //         searchByDefinition();
+  //         break;
+  //       case 2:
+  //         searchBySlangWord();
+  //         break;
+  //       case 3:
+  //         randomSlangWordToday();
+  //         break;
+  //       case 4:
+  //         quizSlangWord();
+  //         break;
+  //       case 5:
+  //         quizWithDefinition();
+  //         break;
+  //       case 6:
+  //         addASlangWord();
+  //         break;
+  //       case 7:
+  //         editASlangWord();
+  //         break;
+  //       case 8:
+  //         deleteASlangWord();
+  //         break;
+  //       case 9:
+  //         searchHistory();
+  //         break;
+  //       case 10:
+  //         System.exit(0);
+  //         break;
+  //       default:
+  //         System.out.println("Invalid choice");
+  //         break;
+  //     }
+  //   } 
   
-  }
+  // }
 }
