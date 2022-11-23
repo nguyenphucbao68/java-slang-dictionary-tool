@@ -4,13 +4,15 @@ import java.util.regex.*;
 
 public class dictionary {
   static HashMap<String, String> slangHashMap = new HashMap<String, String>();
-  static HashMap<String, HashMap<String, Boolean>> definitionHashMap = new HashMap<String, HashMap<String, Boolean>>();
-
+  static HashMap<String, HashSet<String>> definitionHashMap = new HashMap<String, HashSet<String>>();
+  static HashMap<String, HashSet<String>> slangWordIndex = new HashMap<String, HashSet<String>>();
   static final String HISTORY_FILE_NAME = "history.txt";
   static final String DATASET_FILE_NAME = "slang.txt";
+  static final String INDEX_FILE_NAME = "index.txt";
+  static final String SLANG_WORD_INDEX_FILE_NAME = "slang_index.txt";
   static final int NUM_OF_ANSWERS_QUIZ = 4;
   static Random rand = new Random();
-  
+
   private static void saveHistorySearch(String slangWord){
     try {
       FileWriter fr = new FileWriter(HISTORY_FILE_NAME, true);
@@ -28,10 +30,14 @@ public class dictionary {
     System.out.println("Search by slang word");
     System.out.print("Enter slang word: ");
     String slangWord = System.console().readLine();
-    if(slangHashMap.containsKey(slangWord)){
-      System.out.println("Definition: " + slangHashMap.get(slangWord));
+    if(slangWordIndex.containsKey(slangWord)){
+      // slow list of slangwords
+      HashSet<String> slangWords = slangWordIndex.get(slangWord);
+      for(String s : slangWords){
+        System.out.println(s + ": " + slangHashMap.get(s));
+      }
     } else {
-      System.out.println("Slang word not found");
+      System.out.println("Not found");
     }
 
     saveHistorySearch(slangWord);
@@ -49,10 +55,10 @@ public class dictionary {
     boolean first = true;
     for (String keyword : keywordsSplit) {
       if(slangWordResult.size() == 0 && first){
-        slangWordResult.addAll(definitionHashMap.get(keyword).keySet());
+        slangWordResult.addAll(definitionHashMap.get(keyword));
         first = false;
       }else if(definitionHashMap.containsKey(keyword)){
-        slangWordResult.retainAll(definitionHashMap.get(keyword).keySet());
+        slangWordResult.retainAll(definitionHashMap.get(keyword));
       }
     }
 
@@ -62,10 +68,10 @@ public class dictionary {
     }
   }
 
-  private static void loadSlangWords(String fileName){
+  private static void loadSlangWords(){
     // load slang words
     try {
-      FileReader fr = new FileReader(fileName);
+      FileReader fr = new FileReader(DATASET_FILE_NAME);
       BufferedReader br = new BufferedReader(fr);
 
       String line = br.readLine();
@@ -74,16 +80,27 @@ public class dictionary {
           continue;
         }
         String[] split = line.split("`");
-        slangHashMap.put(split[0], split[1]);
 
+        slangHashMap.put(split[0], split[1]);
+        for(int i = 0; i < split[0].length(); i++){
+          String subString = split[0].substring(0, i + 1);
+          if(!slangWordIndex.containsKey(subString)){
+            slangWordIndex.put(subString, new HashSet<String>());
+          }
+          slangWordIndex.get(subString).add(split[0]);
+        }
+
+        split[1] = split[1].replace("|", " ");
+        split[1] = split[1].replace("   ", " ");
+        split[1] = split[1].replace("  ", " ");
         String[] definitionKeywords = split[1].split(" ");
 
         for(String keyword : definitionKeywords){
           if(definitionHashMap.containsKey(keyword)){
-            definitionHashMap.get(keyword).put(split[0], true);
+            definitionHashMap.get(keyword).add(split[0]);
           } else {
-            HashMap<String, Boolean> temp = new HashMap<String, Boolean>();
-            temp.put(split[0], true);
+            HashSet<String> temp = new HashSet<String>();
+            temp.add(split[0]);
             definitionHashMap.put(keyword, temp);
           }
         }
@@ -145,7 +162,6 @@ public class dictionary {
 
     return randomSlangWords;
   }
-
 
   private static void quizSlangWord(){
     System.out.println("===================================");
@@ -232,7 +248,10 @@ public class dictionary {
     }
 
     slangHashMap.put(slangWord, definition);
-    addKeywordsByDefinition(slangWord, definition);
+    addKeywordsByDefinitionHashMap(slangWord, definition);
+    addKeywordHashMap(slangWord);
+
+    saveIndexDictionaryData();
   }
 
   private static void removeKeywordsByDefinition(String slangWord){
@@ -242,16 +261,67 @@ public class dictionary {
     }
   }
 
-  private static void addKeywordsByDefinition(String slangWord, String definition){
+  private static void addKeywordsByDefinitionHashMap(String slangWord, String definition){
     String[] keywords = definition.split(" ");
     for(String keyword : keywords){
       if(definitionHashMap.containsKey(keyword)){
-        definitionHashMap.get(keyword).put(slangWord, true);
+        definitionHashMap.get(keyword).add(slangWord);
       } else {
-        HashMap<String, Boolean> temp = new HashMap<String, Boolean>();
-        temp.put(slangWord, true);
+        HashSet<String> temp = new HashSet<String>();
+        temp.add(slangWord);
         definitionHashMap.put(keyword, temp);
       }
+    }
+  }
+
+  private static void addKeywordHashMap(String slangWord){
+    for(int i = 0; i < slangWord.length(); i++){
+      String subString = slangWord.substring(0, i + 1);
+      if(!slangWordIndex.containsKey(subString)){
+        slangWordIndex.put(subString, new HashSet<String>());
+      }
+      slangWordIndex.get(subString).add(slangWord);
+    }
+  }
+
+  private static void removeKeywordIndex(String slangWord){
+    for(int i = 0; i < slangWord.length(); i++){
+      String subString = slangWord.substring(0, i + 1);
+      slangWordIndex.get(subString).remove(slangWord);
+    }
+  }
+
+  private static void saveIndexDictionaryData(){
+    try {
+      String fileName = INDEX_FILE_NAME;
+      FileWriter fw = new FileWriter(fileName);
+
+      for(String keyword: definitionHashMap.keySet()){
+          fw.write(keyword);
+          for(String slangWord : definitionHashMap.get(keyword)){
+            fw.write(" " + slangWord);
+          }
+          fw.write("\n");
+      }
+      fw.close();
+
+      // save slang word index to file
+      fileName = SLANG_WORD_INDEX_FILE_NAME;
+      fw = new FileWriter(fileName);
+
+      for(String keyword: slangWordIndex.keySet()){
+          fw.write(keyword);
+          for(String slangWord : slangWordIndex.get(keyword)){
+            fw.write(" " + slangWord);
+          }
+          fw.write("\n");
+      }
+
+      fw.close();
+
+    } catch (Exception e) {
+      System.out.println(e);
+      return;
     }
   }
 
@@ -271,10 +341,12 @@ public class dictionary {
     String definition = System.console().readLine();
 
     removeKeywordsByDefinition(slangWord);
-
-    addKeywordsByDefinition(slangWord, definition);
-
+    removeKeywordIndex(slangWord);
+    addKeywordsByDefinitionHashMap(slangWord, definition);
+    addKeywordHashMap(slangWord);
     slangHashMap.put(slangWord, definition);
+
+    saveIndexDictionaryData();
   }
 
   private static void deleteASlangWord(){
@@ -291,12 +363,102 @@ public class dictionary {
     }
 
     removeKeywordsByDefinition(slangWord);
+    removeKeywordIndex(slangWord);
     slangHashMap.remove(slangWord);
+
+    saveIndexDictionaryData();
+  }
+
+  private static void loadSlangWordIndexFromFile(){
+    try {
+      File file = new File(SLANG_WORD_INDEX_FILE_NAME);
+      Scanner sc = new Scanner(file);
+
+      while (sc.hasNextLine()) {
+        String line = sc.nextLine();
+        String[] words = line.split(" ");
+        String keyword = words[0];
+        for(int i = 1; i < words.length; i++){
+          if(!slangWordIndex.containsKey(keyword)){
+            slangWordIndex.put(keyword, new HashSet<String>());
+          }
+          slangWordIndex.get(keyword).add(words[i]);
+        }
+      }
+      sc.close();
+    } catch (Exception e) {
+      System.out.println(e);
+      return;
+    }
+  }
+
+  private static void loadIndexDictionaryFromFile(){
+    try {
+      File file = new File(INDEX_FILE_NAME);
+      Scanner sc = new Scanner(file);
+
+      while (sc.hasNextLine()) {
+        String line = sc.nextLine();
+        String[] words = line.split(" ");
+        String keyword = words[0];
+        for(int i = 1; i < words.length; i++){
+          if(!definitionHashMap.containsKey(keyword)){
+            definitionHashMap.put(keyword, new HashSet<String>());
+          }
+          definitionHashMap.get(keyword).add(words[i]);
+        }
+      }
+      sc.close();
+    } catch (Exception e) {
+      System.out.println(e);
+      return;
+    }
+  }
+
+  private static void loadDataSetFromFile(){
+    try {
+      FileReader fr = new FileReader(DATASET_FILE_NAME);
+      BufferedReader br = new BufferedReader(fr);
+
+      String line = br.readLine();
+      while((line = br.readLine()) != null){
+        if(!line.contains("`")){
+          continue;
+        }
+        String[] split = line.split("`");
+
+        slangHashMap.put(split[0], split[1]);
+      }
+      fr.close();
+    } catch (Exception e) {
+      System.out.println(e);
+      return;
+    }
+  }
+
+  private static void handleIndexBeforeRunningApp(){
+    try {
+      // check file index exists
+      File file = new File(INDEX_FILE_NAME);
+      
+      // check file slang word index exists
+      File file2 = new File(SLANG_WORD_INDEX_FILE_NAME);
+      if(file.exists() && file2.exists()){
+        loadSlangWordIndexFromFile();
+        loadIndexDictionaryFromFile();
+        loadDataSetFromFile();
+      }else{
+        loadSlangWords();
+      }
+    } catch (Exception e) {
+      System.out.println(e);
+      return;
+    }
   }
 
   public static void main(String[] args) {
-    loadSlangWords(DATASET_FILE_NAME);
-
+    handleIndexBeforeRunningApp();
+    saveIndexDictionaryData();
     while(true){
       System.out.println("===================================");
       System.out.println("1. Search by definition");
@@ -348,5 +510,6 @@ public class dictionary {
           break;
       }
     } 
+  
   }
 }
