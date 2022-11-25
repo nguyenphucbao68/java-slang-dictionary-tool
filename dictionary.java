@@ -306,7 +306,6 @@ public class dictionary  extends JPanel implements ActionListener {
 
     panelQuiz.add(panelQuizButton);
 
-    // JOptionPane.showMessageDialog(null, panelQuiz);
 
     quizFrame.setVisible(true);
 
@@ -378,8 +377,6 @@ public class dictionary  extends JPanel implements ActionListener {
             if(i == randomIndex + 1){
               JOptionPane.showMessageDialog(null, "Correct!");
 
-              // close panelQuiz
-              // panelQuiz.setVisible(false);
               quizFrame.dispose();
             } else {
               JOptionPane.showMessageDialog(null, "Wrong!");
@@ -394,8 +391,6 @@ public class dictionary  extends JPanel implements ActionListener {
     panelQuizButton.add(buttonSubmit);
 
     panelQuiz.add(panelQuizButton);
-
-    // JOptionPane.showMessageDialog(null, panelQuiz);
 
     quizFrame.setVisible(true);
 
@@ -620,7 +615,6 @@ public class dictionary  extends JPanel implements ActionListener {
   }
 
   private static void editASlangWord(){
-    // check selected on list or not
     if(searchList.getSelectedIndex() == -1){
       JOptionPane.showMessageDialog(null, "Please select a slang word to edit");
       return;
@@ -962,7 +956,6 @@ public class dictionary  extends JPanel implements ActionListener {
         searchByDefinition();
       }
     }else if(e.getSource() == createButton){
-      // create
       addASlangWord();
     }else if(e.getSource() == editButton){
       editASlangWord();
@@ -989,11 +982,10 @@ public class dictionary  extends JPanel implements ActionListener {
 
     //Create and set up the content pane.
     JComponent newContentPane = new dictionary();
-    newContentPane.setOpaque(true); //content panes must be opaque
+    newContentPane.setOpaque(true);
     frame.setContentPane(newContentPane);
 
-    //Display the window.
-    frame.pack(); // fit to all components that you have
+    frame.pack();
     frame.setVisible(true);
   }
 
@@ -1006,9 +998,6 @@ public class dictionary  extends JPanel implements ActionListener {
       String value = entry.getValue();
       listSearchResultModel.addElement(key + " - " + value);
     }
-
-    // listSearchResultModel.addAll(slangHashMap.keySet());
-
     searchList.setModel(listSearchResultModel);
   }
   
