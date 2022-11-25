@@ -89,7 +89,7 @@ public class dictionary  extends JPanel implements ActionListener {
     Set<String> slangWordResult = new HashSet<String>();
     boolean first = true;
     for (String keyword : keywordsSplit) {
-      if(slangWordResult.size() == 0 && first){
+      if(slangWordResult.size() == 0 && first && definitionHashMap.containsKey(keyword)){
         slangWordResult.addAll(definitionHashMap.get(keyword));
         first = false;
       }else if(definitionHashMap.containsKey(keyword)){
@@ -105,7 +105,6 @@ public class dictionary  extends JPanel implements ActionListener {
       if(definition == null) continue;
       listSearchResultModel.addElement(slangWordWithDefinition + " - " + definition);
     }
-    // listSearchResultModel.addAll(slangWordResult);
     searchList.setModel(listSearchResultModel);
     
   }
@@ -934,8 +933,6 @@ public class dictionary  extends JPanel implements ActionListener {
     tableHistory.setPreferredScrollableViewportSize(new Dimension(200, 200));
     tableHistory.setFillsViewportHeight(true);
 
-  
-
     JScrollPane scrollPane = new JScrollPane(tableHistory);
     history.add(scrollPane);
 
@@ -968,10 +965,8 @@ public class dictionary  extends JPanel implements ActionListener {
       // create
       addASlangWord();
     }else if(e.getSource() == editButton){
-      // edit
       editASlangWord();
     }else if(e.getSource() == deleteButton){
-      // delete
       deleteASlangWord();
     }else if(e.getSource() == quizOpenWithSlangWord){
       quizSlangWord();
