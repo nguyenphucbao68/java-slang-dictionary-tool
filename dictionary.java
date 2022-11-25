@@ -455,7 +455,6 @@ public class dictionary  extends JPanel implements ActionListener {
         String slangWord = addSlangWordInput.getText();
         String definition = addSlangWordDefinitionInput.getText();
         if(slangHashMap.containsKey(slangWord)){
-          // JOptionPane.showMessageDialog(null, "Slang word already exists");
 
           // add meaning for existing slang word
           String existingDefinition = slangHashMap.get(slangWord);
@@ -499,7 +498,7 @@ public class dictionary  extends JPanel implements ActionListener {
 
         panelAddSlangWord.setVisible(false);
 
-        listSearchResultModel.addElement(slangWord);
+        listSearchResultModel.addElement(slangWord + " - " + definition);
 
         addFrame.dispose();
       }
