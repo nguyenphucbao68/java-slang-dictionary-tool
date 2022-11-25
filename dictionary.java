@@ -52,24 +52,29 @@ public class dictionary  extends JPanel implements ActionListener {
       return;
     }
 
-    if(slangWordIndex.containsKey(slangWord)){
-      HashSet<String> slangWords = slangWordIndex.get(slangWord);
-      // String[] names = slangWords.toArray(new String[slangWords.size()]);
-      // searchList.setListData(names);
-      listSearchResultModel.clear();
-      listSearchResultModel.addAll(slangWords);
-      searchList.setModel(listSearchResultModel);
-
-       // add slangWord to tableHistory at top
-    
-    } else {
-      JOptionPane.showMessageDialog(frame, "Not found");
+    try {
+      if(slangWordIndex.containsKey(slangWord)){
+        HashSet<String> slangWords = slangWordIndex.get(slangWord);
+        listSearchResultModel.clear();
+  
+        // concentrate all slang words with its definition
+        for(String slangWordWithDefinition : slangWords){
+          if(slangWordWithDefinition == "" || slangWordWithDefinition == " ") continue;
+          String definition = slangHashMap.get(slangWordWithDefinition);
+          listSearchResultModel.addElement(slangWordWithDefinition + " - " + definition);
+        }
+        searchList.setModel(listSearchResultModel);
+      } else {
+        JOptionPane.showMessageDialog(frame, "Not found");
+      }      
+      DefaultTableModel model = (DefaultTableModel) tableHistory.getModel();
+      model.insertRow(0, new Object[]{slangWord, new java.util.Date()});
+      saveHistorySearch(slangWord);
+    } catch (Exception e) {
+      System.out.println("error: " + e);
+      return;
     }
-
-    saveHistorySearch(slangWord);
-
-    DefaultTableModel model = (DefaultTableModel) tableHistory.getModel();
-    model.insertRow(0, new Object[]{slangWord, new java.util.Date()});
+    
   }
 
   private static void searchByDefinition(){
@@ -92,7 +97,13 @@ public class dictionary  extends JPanel implements ActionListener {
     }
 
     listSearchResultModel.clear();
-    listSearchResultModel.addAll(slangWordResult);
+
+    // concentrate all slang words with its definition
+    for(String slangWordWithDefinition : slangWordResult){
+      String definition = slangHashMap.get(slangWordWithDefinition);
+      listSearchResultModel.addElement(slangWordWithDefinition + " - " + definition);
+    }
+    // listSearchResultModel.addAll(slangWordResult);
     searchList.setModel(listSearchResultModel);
     
   }
@@ -246,6 +257,7 @@ public class dictionary  extends JPanel implements ActionListener {
     panelQuizTitle.setLayout(new BoxLayout(panelQuizTitle, BoxLayout.X_AXIS));
     JLabel quizTitle = new JLabel(word + " - Choose the correct one: ");
     quizTitle.setFont(new Font("Arial", Font.BOLD, 20));
+    panelQuizTitle.add(Box.createRigidArea(new Dimension(10, 0)));
     panelQuizTitle.add(quizTitle);
     panelQuizTitle.add(Box.createRigidArea(new Dimension(10, 0)));
     panelQuizTitle.add(Box.createHorizontalGlue());
@@ -330,6 +342,7 @@ public class dictionary  extends JPanel implements ActionListener {
 
     JLabel quizTitle = new JLabel(definition + " - Choose the correct one: ");
     quizTitle.setFont(new Font("Arial", Font.BOLD, 20));
+    panelQuizTitle.add(Box.createRigidArea(new Dimension(10, 0)));
     panelQuizTitle.add(quizTitle);
     panelQuizTitle.add(Box.createRigidArea(new Dimension(10, 0)));
     panelQuizTitle.add(Box.createHorizontalGlue());
@@ -480,7 +493,11 @@ public class dictionary  extends JPanel implements ActionListener {
   }
 
   private static void removeKeywordsByDefinition(String slangWord){
-    String[] keywords = slangHashMap.get(slangWord).split(" ");
+    String definition = slangHashMap.get(slangWord);
+    definition = definition.replace("|", " ");
+    definition = definition.replace("   ", " ");
+    definition = definition.replace("  ", " ");
+    String[] keywords = definition.split(" ");
     for(String keyword : keywords){
       definitionHashMap.get(keyword).remove(slangWord);
     }
@@ -536,8 +553,14 @@ public class dictionary  extends JPanel implements ActionListener {
 
       for(String keyword: slangWordIndex.keySet()){
           fw.write(keyword);
+          int index = 0;
           for(String slangWord : slangWordIndex.get(keyword)){
-            fw.write(" " + slangWord);
+            if(index == 0){
+              fw.write("`" + slangWord);
+            }else{
+              fw.write(" " + slangWord);
+            }
+            index++;
           }
           fw.write("\n");
       }
@@ -589,7 +612,12 @@ public class dictionary  extends JPanel implements ActionListener {
     JTextField editSlangWordInput = new JTextField();
     editSlangWordInput.setFont(new Font("Arial", Font.PLAIN, 20));
     editSlangWordInput.setEditable(false);
-    editSlangWordInput.setText(searchList.getSelectedValue());
+
+    String textString = searchList.getSelectedValue();
+    // get slangWord from textString
+    String slangWordOld = textString.substring(0, textString.indexOf(" - "));
+
+    editSlangWordInput.setText(slangWordOld);
     panelEditSlangWordInput.add(editSlangWordInput);
     panelEditSlangWordInput.add(Box.createRigidArea(new Dimension(10, 0)));
     panelEditSlangWordInput.add(Box.createHorizontalGlue());
@@ -599,7 +627,7 @@ public class dictionary  extends JPanel implements ActionListener {
     panelEditSlangWordDefinitionInput.setLayout(new BoxLayout(panelEditSlangWordDefinitionInput, BoxLayout.X_AXIS));
     JTextField editSlangWordDefinitionInput = new JTextField();
     editSlangWordDefinitionInput.setFont(new Font("Arial", Font.PLAIN, 20));
-    editSlangWordDefinitionInput.setText(slangHashMap.get(searchList.getSelectedValue()));
+    editSlangWordDefinitionInput.setText(slangHashMap.get(slangWordOld));
     panelEditSlangWordDefinitionInput.add(editSlangWordDefinitionInput);
     panelEditSlangWordDefinitionInput.add(Box.createRigidArea(new Dimension(10, 0)));
     panelEditSlangWordDefinitionInput.add(Box.createHorizontalGlue());
@@ -632,6 +660,21 @@ public class dictionary  extends JPanel implements ActionListener {
 
         panelEditSlangWord.setVisible(false);
 
+        // find index in in searchList with slang word
+        int index = 0;
+        for(int i = 0; i < searchList.getModel().getSize(); i++){
+          String textString = searchList.getModel().getElementAt(i);
+          String slangWordTemp = textString.substring(0, textString.indexOf(" - "));
+          if(slangWordTemp.equals(slangWord)){
+            index = i;
+            break;
+          }
+        }
+
+        // add new element to searchLists
+        // searchList.setListData(new String[]{});
+        listSearchResultModel.setElementAt(slangWord + " - " + definition, index);
+
         editFrame.dispose();
       }
     });
@@ -651,10 +694,10 @@ public class dictionary  extends JPanel implements ActionListener {
   }
 
   private static void deleteASlangWord(){
-    // read selected value from searchList
-    String slangWord = searchList.getSelectedValue();
+    String textString = searchList.getSelectedValue();
 
-    // check existence
+    String slangWord = textString.substring(0, textString.indexOf(" - "));
+
     if(!slangHashMap.containsKey(slangWord)){
       JOptionPane.showMessageDialog(null, "Slang word "+slangWord+" does not exist");
       return;
@@ -686,9 +729,11 @@ public class dictionary  extends JPanel implements ActionListener {
 
       while (sc.hasNextLine()) {
         String line = sc.nextLine();
-        String[] words = line.split(" ");
+        String[] words = line.split("`");
         String keyword = words[0];
-        for(int i = 1; i < words.length; i++){
+        words = words[1].split(" ");
+        for(int i = 0; i < words.length; i++){
+          if(keyword == "" || keyword == " ") continue;
           if(!slangWordIndex.containsKey(keyword)){
             slangWordIndex.put(keyword, new HashSet<String>());
           }
@@ -730,7 +775,7 @@ public class dictionary  extends JPanel implements ActionListener {
       FileReader fr = new FileReader(DATASET_CLONE_FILE_NAME);
       BufferedReader br = new BufferedReader(fr);
 
-      String line = br.readLine();
+      String line;
       while((line = br.readLine()) != null){
         if(!line.contains("`")){
           continue;
@@ -757,10 +802,8 @@ public class dictionary  extends JPanel implements ActionListener {
         loadSlangWordIndexFromFile();
         loadIndexDictionaryFromFile();
         loadDataSetFromFile();
-        System.out.println("test 1");
 
       }else{
-        System.out.println("test 2");
         loadSlangWords();
         saveIndexDictionaryData();
       }
@@ -769,7 +812,6 @@ public class dictionary  extends JPanel implements ActionListener {
       return;
     }
   }
-
   private dictionary(){
     setLayout(new BorderLayout());
     JPanel leftpanel = new JPanel();
@@ -782,6 +824,10 @@ public class dictionary  extends JPanel implements ActionListener {
     searchOptions = new JComboBox<String>(searchOptionsData);
     searchOptions.setSelectedIndex(0);
     searchOptions.addActionListener(this);
+
+    // add a label above search
+    JLabel searchLabel = new JLabel("* Slang word: search by letter; *Definition: full-text search, search by word");
+    searchLabel.setForeground(Color.BLUE);
 
     searchButton = new JButton("Search");
     searchButton.addActionListener(this);
@@ -814,6 +860,7 @@ public class dictionary  extends JPanel implements ActionListener {
     leftpanel.add(searchField);
     leftpanel.add(searchOptions);
     leftpanel.add(searchButton);
+    leftpanel.add(searchLabel);
     leftpanel.add(listScroller);
     leftpanel.add(btnList);
 
@@ -841,9 +888,13 @@ public class dictionary  extends JPanel implements ActionListener {
 
     String[] columnNames = {"Slang word", "Date"};
     String[][] data = {{"", ""}};
-    tableHistory = new JTable(data, columnNames);
+    tableHistory = new JTable(new DefaultTableModel());
+
+    tableHistory.setModel(new DefaultTableModel(data, columnNames));
     tableHistory.setPreferredScrollableViewportSize(new Dimension(200, 200));
     tableHistory.setFillsViewportHeight(true);
+
+  
 
     JScrollPane scrollPane = new JScrollPane(tableHistory);
     history.add(scrollPane);
@@ -911,10 +962,17 @@ public class dictionary  extends JPanel implements ActionListener {
     frame.setVisible(true);
   }
 
+
   private static void loadAllSlangWordsToSearchResult(){
     listSearchResultModel = new DefaultListModel<String>();
 
-    listSearchResultModel.addAll(slangHashMap.keySet());
+    for (Map.Entry<String, String> entry : slangHashMap.entrySet()) {
+      String key = entry.getKey();
+      String value = entry.getValue();
+      listSearchResultModel.addElement(key + " - " + value);
+    }
+
+    // listSearchResultModel.addAll(slangHashMap.keySet());
 
     searchList.setModel(listSearchResultModel);
   }
