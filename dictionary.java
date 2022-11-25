@@ -61,6 +61,7 @@ public class dictionary  extends JPanel implements ActionListener {
         for(String slangWordWithDefinition : slangWords){
           if(slangWordWithDefinition == "" || slangWordWithDefinition == " ") continue;
           String definition = slangHashMap.get(slangWordWithDefinition);
+          if(definition == null) continue;
           listSearchResultModel.addElement(slangWordWithDefinition + " - " + definition);
         }
         searchList.setModel(listSearchResultModel);
@@ -101,6 +102,7 @@ public class dictionary  extends JPanel implements ActionListener {
     // concentrate all slang words with its definition
     for(String slangWordWithDefinition : slangWordResult){
       String definition = slangHashMap.get(slangWordWithDefinition);
+      if(definition == null) continue;
       listSearchResultModel.addElement(slangWordWithDefinition + " - " + definition);
     }
     // listSearchResultModel.addAll(slangWordResult);
@@ -459,7 +461,37 @@ public class dictionary  extends JPanel implements ActionListener {
         String slangWord = addSlangWordInput.getText();
         String definition = addSlangWordDefinitionInput.getText();
         if(slangHashMap.containsKey(slangWord)){
-          JOptionPane.showMessageDialog(null, "Slang word already exists");
+          // JOptionPane.showMessageDialog(null, "Slang word already exists");
+
+          // add meaning for existing slang word
+          String existingDefinition = slangHashMap.get(slangWord);
+          String newDefinition = existingDefinition + "|" + definition;
+          slangHashMap.put(slangWord, newDefinition);
+
+          removeKeywordsByDefinition(slangWord);
+          addKeywordsByDefinitionHashMap(slangWord, newDefinition);
+      
+          saveIndexDictionaryData();
+
+          JOptionPane.showMessageDialog(null, "Slang word updated definition successfully");
+
+          // find index in in searchList with slang word
+          int index = 0;
+          for(int i = 0; i < searchList.getModel().getSize(); i++){
+            String textString = searchList.getModel().getElementAt(i);
+            String slangWordTemp = textString.substring(0, textString.indexOf(" - "));
+            if(slangWordTemp.equals(slangWord)){
+              index = i;
+              break;
+            }
+          }
+
+          // add new element to searchLists
+          // searchList.setListData(new String[]{});
+          listSearchResultModel.setElementAt(slangWord + " - " + newDefinition, index);
+
+
+          addFrame.dispose();
           return;
         }
 
@@ -499,11 +531,16 @@ public class dictionary  extends JPanel implements ActionListener {
     definition = definition.replace("  ", " ");
     String[] keywords = definition.split(" ");
     for(String keyword : keywords){
-      definitionHashMap.get(keyword).remove(slangWord);
+      if(definitionHashMap.containsKey(keyword)){
+        definitionHashMap.get(keyword).remove(slangWord);
+      }
     }
   }
 
   private static void addKeywordsByDefinitionHashMap(String slangWord, String definition){
+    definition = definition.replace("|", " ");
+    definition = definition.replace("   ", " ");
+    definition = definition.replace("  ", " ");
     String[] keywords = definition.split(" ");
     for(String keyword : keywords){
       if(definitionHashMap.containsKey(keyword)){
@@ -703,23 +740,26 @@ public class dictionary  extends JPanel implements ActionListener {
       return;
     }
 
-    removeKeywordsByDefinition(slangWord);
-    removeKeywordIndex(slangWord);
-    slangHashMap.remove(slangWord);
+    int confirm = JOptionPane.showConfirmDialog(null, "Are you sure to delete slang word "+slangWord+"?", "Confirm", JOptionPane.YES_NO_OPTION);
 
-    saveIndexDictionaryData();
-
-
-    // remove the slangWord from searchList
-    int index = searchList.getSelectedIndex();
-    
-    if (index != -1) {
-      listSearchResultModel.removeElementAt(index);
-      JOptionPane.showMessageDialog(null, "Slang word " + slangWord + " deleted!");
-    }else{
-      JOptionPane.showMessageDialog(null, "Slang word " + slangWord + " deleted failure!");
-    }
+    if(confirm == JOptionPane.YES_OPTION){
+      removeKeywordsByDefinition(slangWord);
+      removeKeywordIndex(slangWord);
+      slangHashMap.remove(slangWord);
   
+      saveIndexDictionaryData();
+
+      int index = searchList.getSelectedIndex();
+      
+      if (index != -1) {
+        listSearchResultModel.removeElementAt(index);
+        JOptionPane.showMessageDialog(null, "Slang word " + slangWord + " deleted!");
+      }else{
+        JOptionPane.showMessageDialog(null, "Slang word " + slangWord + " deleted failure!");
+      }
+    } else {
+      JOptionPane.showMessageDialog(null, "Slang word " + slangWord + " not deleted!");
+    }
   }
 
   private static void loadSlangWordIndexFromFile(){
