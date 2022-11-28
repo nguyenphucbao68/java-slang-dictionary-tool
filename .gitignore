@@ -27,3 +27,8 @@ definition_index.txt
 slang_index.txt
 slang_clone.txt
 history.txt
+
+out/artifacts/dict_jar/definition_index.txt
+out/artifacts/dict_jar/slang_index.txt
+out/artifacts/dict_jar/slang_clone.txt
+out/artifacts/dict_jar/history.txt
