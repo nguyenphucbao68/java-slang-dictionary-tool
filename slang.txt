@@ -159,8 +159,13 @@ $_$`Has money
 7DAW`Seven Days A Week
 8)`Cool
 8*`Kiss
+<<<<<<< HEAD
 8-)`Cool
 8-|`Nerdy
+=======
+8-)`Cool 
+8-|`Nerdy 
+>>>>>>> 5583ae02e477bf58f744269767f11ac9ea04caa7
 80S`The Eighties| 1980s
 8====D`Penis
 8===D`A Penis
@@ -1086,7 +1091,11 @@ BWM`Bisexual White Male| Bear With Me
 BWOI`Friend| buddy
 BWT`Misspelling of BTW
 BWTH`But What The Hell
+<<<<<<< HEAD
 BWW`Buffalo Wild Wings
+=======
+BWW`Buffalo Wild Wings 
+>>>>>>> 5583ae02e477bf58f744269767f11ac9ea04caa7
 BYAM`Between You And Me
 BYKI`Before You Know It
 BYKT`But You Know That
@@ -1157,7 +1166,11 @@ CBGB`Country BlueGrass Blues
 CBH`Child Bearing Hips
 CBI`Californian Bureau of Investigation| Confederation of British Industry
 CBLTH`Can't Breathe Laughing Too Hard
+<<<<<<< HEAD
 CBR`Captive Bead Ring
+=======
+CBR`Captive Bead Ring 
+>>>>>>> 5583ae02e477bf58f744269767f11ac9ea04caa7
 CBS`Can't Be Stuffed
 CBT`Cognitive Behavioural Therapy
 CC`Credit Card| Carbon Copy| Crowd Control| Country Code
@@ -1445,7 +1458,11 @@ CUL`See You Later.
 CUL8ER`See You Later
 CUL8R`See You Later
 CULA`See You Later, Alligator
+<<<<<<< HEAD
 CULO`Ass
+=======
+CULO`Ass 
+>>>>>>> 5583ae02e477bf58f744269767f11ac9ea04caa7
 CUMBERBITCH`Female Fan Of Benedict Cumberbatch
 CUOL`See You On Line
 CUPPA`Cup of tea
@@ -2561,7 +2578,11 @@ GOWM`Go Out With Me
 GOY`Non-Jewish person
 GP`General Principle
 GPA`Grade-Point Average
+<<<<<<< HEAD
 GPC`Generic Pack of Cigarettes| Get/Post/Cookie
+=======
+GPC`Generic Pack of Cigarettes| Get/Post/Cookie 
+>>>>>>> 5583ae02e477bf58f744269767f11ac9ea04caa7
 GPL`General Public License
 GPOY`Gratuitous Picture Of Yourself
 GPOYW`Gratuitous Picture Of Yourself Wednesday
@@ -3025,7 +3046,11 @@ ICBINB`I Can't Believe It's Not Butter
 ICBM`Intercontinental Ballistic Missile
 ICBSST`I Can't Believe She Said That
 ICBW`It Could Be Worse
+<<<<<<< HEAD
 ICC`Ice Crown Citadel
+=======
+ICC`Ice Crown Citadel 
+>>>>>>> 5583ae02e477bf58f744269767f11ac9ea04caa7
 ICCL`I Couldn't Care Less
 ICE`Diamonds| Crystal meth| Kill
 ICK`UGH
@@ -3918,7 +3943,11 @@ LOMO`Lights Out, Missionary Only
 LOO`Toilet
 LOOL`Laughing Outlandishly Out Loud
 LOONY`Crazy
+<<<<<<< HEAD
 LOOT`Money
+=======
+LOOT`Money 
+>>>>>>> 5583ae02e477bf58f744269767f11ac9ea04caa7
 LOP`Stupid person
 LOPL`LOL
 LOQ`Laugh Out Quietly
@@ -5286,7 +5315,11 @@ POTD`Post Of The Day
 POTO`Phantom Of The Opera
 POTS`Parents Over The Shoulder| parents watching, I can't really talk
 POTUS`President of the United States
+<<<<<<< HEAD
 POTW`Patient of the Week
+=======
+POTW`Patient of the Week 
+>>>>>>> 5583ae02e477bf58f744269767f11ac9ea04caa7
 POTY`Post Of The Year
 POV`Point Of View
 POW`Prisioner of War
