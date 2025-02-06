@@ -5,10 +5,10 @@ import java.io.*;
 import java.util.*;
 
 public class Dictionary {
-    private static final String DATASET_FILE_NAME = "slang.txt";
-    private static final String DATASET_CLONE_FILE_NAME = "slang_clone.txt";
-    private static final String INDEX_FILE_NAME = "definition_index.txt";
-    private static final String SLANG_WORD_INDEX_FILE_NAME = "slang_index.txt";
+    public static final String DATASET_FILE_NAME = "slang.txt";
+    public static final String DATASET_CLONE_FILE_NAME = "slang_clone.txt";
+    public static final String INDEX_FILE_NAME = "definition_index.txt";
+    public static final String SLANG_WORD_INDEX_FILE_NAME = "slang_index.txt";
 
     private final HashMap<String, String> slangHashMap = new HashMap<>();
     private final HashMap<String, HashSet<String>> definitionHashMap = new HashMap<String, HashSet<String>>();

@@ -1,36 +1,3 @@
-//package ui;
-//
-//import javax.swing.*;
-//import java.awt.*;
-//import core.HistoryManager;
-//import java.util.List;
-//
-//public class HistoryPanel extends JPanel {
-//    private JList<String> historyList;
-//    private DefaultListModel<String> historyModel;
-//
-//    public HistoryPanel() {
-//        setLayout(new BorderLayout());
-//
-//        historyModel = new DefaultListModel<>();
-//        historyList = new JList<>(historyModel);
-//        JScrollPane scrollPane = new JScrollPane(historyList);
-//
-//        loadHistory();
-//
-//        add(new JLabel("Search History"), BorderLayout.NORTH);
-//        add(scrollPane, BorderLayout.CENTER);
-//    }
-//
-//    private void loadHistory() {
-//        List<String> history = HistoryManager.getHistory();
-//        historyModel.clear();
-//        for (String entry : history) {
-//            historyModel.addElement(entry);
-//        }
-//    }
-//}
-
 package ui;
 
 import javax.swing.*;

@@ -7,7 +7,6 @@ import java.awt.event.ActionListener;
 
 import core.Dictionary;
 import core.QuizManager;
-//import core.SlangWordManager;
 
 public class QuizPanel extends JPanel implements ActionListener {
     private JButton quizOpenWithSlangWord;
